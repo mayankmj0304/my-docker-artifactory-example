@@ -1,10 +1,7 @@
-FROM node:18-alpine
+FROM flosumhub/agent:4.7.22
 
-WORKDIR /app
+# (Optional) Add extra tools, files, or config here.
+# Example:
+# RUN apk add --no-cache curl
 
-COPY package.json ./
-RUN npm install
-
-COPY app ./app
-
-CMD ["node", "app/index.js"]
+CMD ["sh"]
