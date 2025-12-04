@@ -1,4 +1,3 @@
-
 name: Build & Push to Artifactory
 
 on:
@@ -9,39 +8,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      JF_URL: ${{ secrets.JF_URL }}
+      JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      JFROG_CLI_SERVER_ID: artifactory
+      DOCKER_IMAGE: example-image
+      BUILD_NAME: example-build
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v3
-        env:
-          JF_URL: ${{ secrets.JF_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-      - name: Configure JFrog CLI
+      - name: Log into Artifactory Docker registry
         run: |
-          jf c add artifactory-server --url="${JF_URL}" --access-token="${JF_ACCESS_TOKEN}" --interactive=false --overwrite=true
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Artifactory Docker registry
-        run: |
-          echo ${{ secrets.JF_ACCESS_TOKEN }} | docker login ${{ secrets.JF_DOCKER_REGISTRY }} -u "token" --password-stdin
+          echo "${JF_ACCESS_TOKEN}" | docker login ${{ secrets.JF_DOCKER_REGISTRY }} -u "token" --password-stdin
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.JF_DOCKER_REGISTRY }}/example-image:latest .
+          docker build -t ${{ secrets.JF_DOCKER_REGISTRY }}/${DOCKER_IMAGE}:latest .
 
-      - name: Push Docker image
+      - name: Push Docker image (Docker-native)
         run: |
-          docker push ${{ secrets.JF_DOCKER_REGISTRY }}/example-image:latest
+          docker push ${{ secrets.JF_DOCKER_REGISTRY }}/${DOCKER_IMAGE}:latest
 
-      - name: Collect build-info
+      - name: Push Docker image with JFrog CLI (for build-info)
         run: |
-          jf rt docker-push ${{ secrets.JF_DOCKER_REPO }}/example-image:latest --build-name=example-build --build-number=$GITHUB_RUN_NUMBER
-          jf rt build-add-props example-build $GITHUB_RUN_NUMBER "git-commit=${GITHUB_SHA}"
+          jf rt docker-push \
+            "${{ secrets.JF_DOCKER_REPO }}/${DOCKER_IMAGE}:latest" \
+            --build-name=${BUILD_NAME} \
+            --build-number=${GITHUB_RUN_NUMBER}
+
+      - name: Add metadata
+        run: |
+          jf rt build-add-props ${BUILD_NAME} ${GITHUB_RUN_NUMBER} "git-commit=${GITHUB_SHA}"
 
       - name: Publish build-info
         run: |
-          jf rt build-publish example-build $GITHUB_RUN_NUMBER
+          jf rt build-publish ${BUILD_NAME} ${GITHUB_RUN_NUMBER}
