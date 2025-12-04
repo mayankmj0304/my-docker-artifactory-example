@@ -24,7 +24,7 @@ jobs:
 
       - name: Log into Artifactory Docker registry
         run: |
-          echo "${JF_ACCESS_TOKEN}" | docker login ${{ secrets.JF_DOCKER_REGISTRY }} -u "token"
+          echo "${JF_ACCESS_TOKEN}" | docker login ${{ secrets.JF_DOCKER_REGISTRY }} -u "sridhar.jonnala@msd.com" 
 
       - name: Build Docker image
         run: |
