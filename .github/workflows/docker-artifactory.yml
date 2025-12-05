@@ -34,13 +34,6 @@ jobs:
         run: |
           docker push ${{ secrets.JF_DOCKER_REGISTRY }}/${DOCKER_IMAGE}:latest
 
-      - name: Push Docker image with JFrog CLI (for build-info)
-        run: |
-          jf rt docker-push \
-            "docker-trial/flosum-image:latest" \
-            --build-name=${BUILD_NAME} \
-            --build-number=${GITHUB_RUN_NUMBER}
-
       - name: Add metadata
         run: |
           jf rt build-add-props ${BUILD_NAME} ${GITHUB_RUN_NUMBER} "git-commit=${GITHUB_SHA}"
